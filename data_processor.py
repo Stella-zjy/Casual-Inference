@@ -23,6 +23,7 @@ def get_dataset():
                                         value="Indian")
     data["race"] = data["race"].replace(to_replace="Asian-Pac-Islander",
                                         value="Asian")
+    print(data.groupby('occupation').count())
     occupationDict = {
         "Exec-managerial": 0,
         "Other-service": 4,
@@ -112,25 +113,17 @@ def get_dataset():
     data.to_csv("modified_train.csv")
     return data
 
-def get_dataset_by_age():
+def get_zxpy():
     data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
     p = data["education"]
     x = data[[
-        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "race", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]]
-    z = data["age"]
+        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]]
+    z1 = data["age"]
+    z2 = data["race"]
     y = data["income_bigger_than_50K"]
-    return z, x, p, y
-
-def get_dataset_by_race():
-    data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
-    p = data["education"]
-    x = data[
-        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "age", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]
-    z = data["race"]
-    y = data["income_bigger_than_50K"]
-    return z, x, p, y
+    return z1, z2, x, p, y
 
 if __name__ == '__main__':
-    z, x, p, y = get_dataset_by_age()
-    print(x.groupby('occupation').count())
+    z1, z2, x, p, y = get_zxpy()
+    print(z1, z2, x, p, y)
 
