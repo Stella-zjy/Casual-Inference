@@ -25,19 +25,19 @@ def get_dataset():
                                         value="Asian")
     occupationDict = {
         "Exec-managerial": 0,
-        "Other-service": 1,
-        "Transport-moving": 2,
-        "Adm-clerical": 2,
-        "Machine-op-inspct": 2,
-        "Sales": 2,
-        "Handlers-cleaners": 2,
-        "Farming-fishing": 2,
+        "Other-service": 4,
+        "Transport-moving": 5,
+        "Adm-clerical": 6,
+        "Machine-op-inspct": 5,
+        "Sales": 3,
+        "Handlers-cleaners": 5,
+        "Farming-fishing": 5,
         "Protective-serv": 2,
-        "Prof-specialty": 1,
-        "Craft-repair": 0,
-        "Tech-support": 2,
-        "Priv-house-serv": 2,
-        "Armed-Forces": 2
+        "Prof-specialty": 2,
+        "Craft-repair": 1,
+        "Tech-support": 5,
+        "Priv-house-serv": 5,
+        "Armed-Forces": 5
     }
     raceDict = {
         "White": 0,
@@ -132,4 +132,5 @@ def get_dataset_by_race():
 
 if __name__ == '__main__':
     z, x, p, y = get_dataset_by_age()
-    print(z, x, p, y)
+    print(x.groupby('occupation').count())
+
