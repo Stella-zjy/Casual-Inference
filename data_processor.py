@@ -112,5 +112,24 @@ def get_dataset():
     data.to_csv("modified_train.csv")
     return data
 
+def get_dataset_by_age():
+    data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
+    p = data["education"]
+    x = data[[
+        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "race", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]]
+    z = data["age"]
+    y = data["income_bigger_than_50K"]
+    return z, x, p, y
+
+def get_dataset_by_race():
+    data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
+    p = data["education"]
+    x = data[
+        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "age", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]
+    z = data["race"]
+    y = data["income_bigger_than_50K"]
+    return z, x, p, y
+
 if __name__ == '__main__':
-    get_dataset()
+    z, x, p, y = get_dataset_by_age()
+    print(z, x, p, y)
