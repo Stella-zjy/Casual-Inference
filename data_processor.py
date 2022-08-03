@@ -16,68 +16,101 @@ style.use("fivethirtyeight")
 
 def get_dataset():
     data = pd.read_csv("../Casual-Inference/data/income_data/train.csv")
-    data = data.dropna()
-    data.describe()
-    data = data.loc[:, ["race", "educational-num", "age", "income_>50K", "occupation", "relationship", "marital-status", "native-country", "gender"]]
-    data.rename(columns = {'educational-num':'educational_num', "income_>50K": "income_bigger_than_50K", 'marital-status':'marital_status'}, inplace = True)
-    data["race"] = data["race"].replace(to_replace ="Amer-Indian-Eskimo",
-                     value ="Indian")
-    data["race"] = data["race"].replace(to_replace ="Asian-Pac-Islander",
-                     value ="Asian")
+    data = data.dropna(axis=0)
+    data.rename(columns={'educational-num': 'educational_num', "income_>50K": "income_bigger_than_50K",
+                         'marital-status': 'marital_status', 'native-country': 'native_country'}, inplace=True)
+    data["race"] = data["race"].replace(to_replace="Amer-Indian-Eskimo",
+                                        value="Indian")
+    data["race"] = data["race"].replace(to_replace="Asian-Pac-Islander",
+                                        value="Asian")
     occupationDict = {
         "Exec-managerial": 0,
         "Other-service": 1,
         "Transport-moving": 2,
-        "Adm-clerical": 3,
-        "Machine-op-inspct": 4,
-        "Sales": 5,
-        "Handlers-cleaners": 6,
-        "Farming-fishing": 7,
-        "Protective-serv": 8,
-        "Prof-specialty": 9,
-        "Craft-repair": 10,
-        "Tech-support": 11,
-        "Priv-house-serv": 12,
-        "Armed-Forces": 13,
-        "": -1
+        "Adm-clerical": 2,
+        "Machine-op-inspct": 2,
+        "Sales": 2,
+        "Handlers-cleaners": 2,
+        "Farming-fishing": 2,
+        "Protective-serv": 2,
+        "Prof-specialty": 1,
+        "Craft-repair": 0,
+        "Tech-support": 2,
+        "Priv-house-serv": 2,
+        "Armed-Forces": 2
     }
     raceDict = {
         "White": 0,
         "Black": 1,
         "Asian": 2,
-        "Indian": 3,
-        "Other": 4,
-        "": -1
+        "Indian": 2,
+        "Other": 2
+    }
+    educationDict = {
+        'Doctorate': 1,
+        '12th': 0,
+        'Bachelors': 1,
+        '7th-8th': 0,
+        'Some-college': 1,
+        'HS-grad': 0,
+        '9th': 0,
+        '10th': 0,
+        '11th': 0,
+        'Masters': 1,
+        'Preschool': 0,
+        '5th-6th': 0,
+        'Prof-school': 0,
+        'Assoc-voc': 0,
+        'Assoc-acdm': 0,
+        '1st-4th': 0
     }
     genderDict = {
-        "Male" : 0,
-        "Female" : 1,
-        "" : -1
+        "Male": 0,
+        "Female": 1
     }
-    def map_age(age):
-        if age < 20 or age > 90:
-            return -1
-        if 20 <= age < 25:
+    maritalDict = {
+        "Divorced": 2,
+        "Never-married": 1,
+        "Married-civ-spouse": 0,
+        "Widowed": 2,
+        "Separated": 2,
+        "Married-spouse-absent": 2,
+        "Married-AF-spouse": 2
+    }
+    workclassDict = {
+        'Private': 0,
+        'State-gov': 1,
+        'Self-emp-not-inc': 2,
+        'Federal-gov': 1,
+        'Local-gov': 1,
+        'Self-emp-inc': 1,
+        'Without-pay': 1
+    }
+
+    def map_relationship(relationship):
+        if relationship == "Husband":
+            return 0
+        if relationship == "Not-in-family":
             return 1
-        if 25 <= age < 30:
+        else:
             return 2
-        if 30 <= age < 35:
-            return 3
-        if 35 <= age < 40:
-            return 4
-        if 40 <= age < 45:
-            return 5
-        if 45 <= age < 50:
-            return 6
-        if 50 <= age < 60:
-            return 7
-        if 60 <= age < 75:
-            return 8
-        if 75 <= age < 90:
-            return 9
+
+    def map_country(native_country):
+        if native_country == "United-States":
+            return 0
+        else:
+            return 1
 
     data["occupation"] = data["occupation"].map(occupationDict)
     data["race"] = data["race"].map(raceDict)
     data["gender"] = data["gender"].map(genderDict)
-    data["age_interval"] = data["age"].map(map_age)
+    data["marital_status"] = data["marital_status"].map(maritalDict)
+    data["native_country"] = data["native_country"].map(map_country)
+    data["workclass"] = data["workclass"].map(workclassDict)
+    data["education"] = data["education"].map(educationDict)
+    data["relationship"] = data["relationship"].map(map_relationship)
+    data.to_csv("modified_train.csv")
     return data
+
+if __name__ == '__main__':
+    get_dataset()
