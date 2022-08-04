@@ -1,3 +1,4 @@
+from tkinter.messagebox import RETRY
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -122,6 +123,15 @@ def get_zxpy():
     z2 = data["race"]
     y = data["income_bigger_than_50K"]
     return z1, z2, x, p, y
+
+# get dataset ready for first stage ML, here we will use age as IV
+def get_xp():
+    data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
+    p = data["education"]
+    x = data[[
+        "workclass", "age", "marital_status", "occupation", "relationship", 
+        "gender", "native_country"]]
+    return x,p
 
 if __name__ == '__main__':
     get_dataset()
