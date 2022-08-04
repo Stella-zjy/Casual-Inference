@@ -83,8 +83,7 @@ class CustomLoss(Module):
         super().__init__()
     def forward(self, predict_y, y,p):
 
-        arg_y = torch.argmax(predict_y,1, keepdim=True)
-        temp =  y - torch.mul(arg_y, p)
+        temp =  y - torch.sum(torch.mul(predict_y, p), dim=1,keepdim=True)
 
         return torch.mean(torch.square(temp))
 
@@ -131,7 +130,8 @@ VALID_RATIO = 0.9
 n_train_examples = int(len(x) * VALID_RATIO)
 n_valid_examples = len(x) - n_train_examples
 
-train_data = x.to_numpy()
+train_data = new_x.to_numpy()
+#train_data = x.to_numpy()
 train_outcome = y.to_numpy()
 
 
@@ -146,7 +146,8 @@ train_iterator = data.DataLoader(train_dataset,
                                  shuffle=True,
                                  batch_size=batch_size)
 
-input_dim = x.shape[1]
+#input_dim = x.shape[1]
+input_dim = x.shape[1] + 1
 output_dim = 2
 
 
@@ -188,6 +189,8 @@ def train(model, iterator, optimizer, criterion, device):
 
         y = torch.unsqueeze(y, 1)
         p = torch.unsqueeze(p, 1)
+
+        print(x.shape)
 
 
         optimizer.zero_grad()
