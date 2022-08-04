@@ -15,7 +15,7 @@ pd.set_option("display.max_columns", 5)
 style.use("fivethirtyeight")
 
 def get_dataset():
-    data = pd.read_csv("../Casual-Inference/data/income_data/train.csv")
+    data = pd.read_csv("../Casual-Inference/data/income_data/test.csv")
     data = data.dropna(axis=0)
     data.rename(columns={'educational-num': 'educational_num', "income_>50K": "income_bigger_than_50K",
                          'marital-status': 'marital_status', 'native-country': 'native_country'}, inplace=True)
@@ -110,20 +110,19 @@ def get_dataset():
     data["workclass"] = data["workclass"].map(workclassDict)
     data["education"] = data["education"].map(educationDict)
     data["relationship"] = data["relationship"].map(map_relationship)
-    data.to_csv("modified_train.csv")
+    data.to_csv("modified_test.csv")
     return data
 
 def get_zxpy():
     data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
     p = data["education"]
     x = data[[
-        "workclass", "fnlwgt", "marital_status", "occupation", "relationship", "gender", "capital-gain", "capital-loss", "hours-per-week", "native_country"]]
+        "workclass",  "marital_status", "occupation", "relationship", "gender", "hours-per-week", "native_country"]]
     z1 = data["age"]
     z2 = data["race"]
     y = data["income_bigger_than_50K"]
     return z1, z2, x, p, y
 
 if __name__ == '__main__':
-    z1, z2, x, p, y = get_zxpy()
-    print(z1, z2, x, p, y)
+    get_dataset()
 
