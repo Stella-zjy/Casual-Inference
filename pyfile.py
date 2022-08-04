@@ -71,8 +71,8 @@ class MLP(nn.Module):
         h3 = self.output_fc(h_2)
         # y_pred = [batch size, output dim]
 
-        y_pred = F.softmax(h3, dim=1)
-        return y_pred, h3
+        #y_pred = F.softmax(h3, dim=1)
+        return h3, h3
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -83,8 +83,7 @@ class CustomLoss(Module):
         super().__init__()
     def forward(self, predict_y, y,p):
 
-        arg_y = torch.argmax(predict_y,1, keepdim=True)
-        temp =  y - torch.mul(arg_y, p)
+        temp =  y - torch.sum(torch.mul(predict_y, p), dim=1,keepdim=True)
 
         return torch.mean(torch.square(temp))
 
@@ -131,6 +130,7 @@ VALID_RATIO = 0.9
 n_train_examples = int(len(x) * VALID_RATIO)
 n_valid_examples = len(x) - n_train_examples
 
+#train_data = new_x.to_numpy()
 train_data = x.to_numpy()
 train_outcome = y.to_numpy()
 
@@ -147,7 +147,8 @@ train_iterator = data.DataLoader(train_dataset,
                                  batch_size=batch_size)
 
 input_dim = x.shape[1]
-output_dim = 2
+#input_dim = x.shape[1] + 1
+output_dim = 1
 
 
 model = MLP(input_dim, output_dim)
@@ -157,7 +158,8 @@ print(f'The model has {count_parameters(model):,} trainable parameters')
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 
-criterion = CustomLoss()
+#criterion = CustomLoss()
+criterion = nn.MSELoss()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 criterion = criterion.to(device)
@@ -186,15 +188,16 @@ def train(model, iterator, optimizer, criterion, device):
         y = y.to(device)
         p = p.to(device)
 
+
         y = torch.unsqueeze(y, 1)
         p = torch.unsqueeze(p, 1)
-
 
         optimizer.zero_grad()
 
         y_pred, _ = model(x)
 
-        loss = criterion(y_pred, y,p)
+        #loss = criterion(y_pred, y,p)
+        loss = criterion(y_pred, y)
 
         acc = calculate_accuracy(y_pred, y)
 
