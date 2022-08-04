@@ -11,6 +11,7 @@ import time
 
 from torch.utils.data import Dataset
 
+from sklearn.metrics import classification_report, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
 
 def sample(num):
     u = np.random.rand()
@@ -48,8 +49,8 @@ class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         
-        self.input_fc = nn.Linear(input_dim, 100)
-        self.hidden_fc = nn.Linear(100, 10)
+        self.input_fc = nn.Linear(input_dim, 10)
+        self.hidden_fc = nn.Linear(10, 10)
         self.output_fc = nn.Linear(10, output_dim)
 
     def forward(self, x):
@@ -71,8 +72,10 @@ class MLP(nn.Module):
         h3 = self.output_fc(h_2)
         # y_pred = [batch size, output dim]
 
+
+        y_pred = F.sigmoid(h3)
         #y_pred = F.softmax(h3, dim=1)
-        return h3, h3
+        return y_pred, h3
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -83,7 +86,7 @@ class CustomLoss(Module):
         super().__init__()
     def forward(self, predict_y, y,p):
 
-        temp =  y - torch.sum(torch.mul(predict_y, p), dim=1,keepdim=True)
+        temp =  y - torch.mul(predict_y, p)
 
         return torch.mean(torch.square(temp))
 
@@ -130,9 +133,11 @@ VALID_RATIO = 0.9
 n_train_examples = int(len(x) * VALID_RATIO)
 n_valid_examples = len(x) - n_train_examples
 
+stage2_data = df[["workclass", "marital_status", "occupation", "relationship"]]
+
 #train_data = new_x.to_numpy()
-train_data = x.to_numpy()
-train_outcome = y.to_numpy()
+train_data = stage2_data.to_numpy()
+train_outcome = df["income_bigger_than_50K"].to_numpy()
 
 
 print(f'Number of training examples: {len(train_data)}')
@@ -146,7 +151,7 @@ train_iterator = data.DataLoader(train_dataset,
                                  shuffle=True,
                                  batch_size=batch_size)
 
-input_dim = x.shape[1]
+input_dim = stage2_data.shape[1]
 #input_dim = x.shape[1] + 1
 output_dim = 1
 
@@ -155,11 +160,11 @@ model = MLP(input_dim, output_dim)
 
 print(f'The model has {count_parameters(model):,} trainable parameters')
 
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.Adam(model.parameters(), lr=0.005)
 
 
 #criterion = CustomLoss()
-criterion = nn.MSELoss()
+criterion = nn.BCELoss()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 criterion = criterion.to(device)
@@ -169,8 +174,9 @@ criterion = criterion.to(device)
 '''----------------------------------------------------------------------------------------------------------------------'''
 '''----------------------------------------------------------------------------------------------------------------------'''
 
+
 def calculate_accuracy(y_pred, y):
-    top_pred = y_pred.argmax(1, keepdim=True)
+    top_pred = (y_pred>0.5).float()
     correct = top_pred.eq(y.view_as(top_pred)).sum()
     acc = correct.float() / y.shape[0]
     return acc
