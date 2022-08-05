@@ -117,16 +117,21 @@ def get_dataset():
 def solve_sample():
     data = pd.read_csv("../Casual-Inference/new X.csv")
     p = data.iloc[:, 8:].apply(lambda x:x.mean(), axis=1)
-    data.insert(loc=len(data.columns), column='p', value="1,0")
-    data = pd.concat([data,p], axis=1).rename(columns={0:'probability'})
-    df_split_row = data.drop('p', axis=1).join(
-        data['p'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('p')).reset_index(level=0)
+    data.insert(loc=len(data.columns), column='education', value="1,0")
+    data = pd.concat([data, p], axis=1).rename(columns={0:'probability'})
+    y = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")["income_bigger_than_50K"]
+    data = pd.concat([data, y], axis=1).rename(columns={"income_bigger_than_50K": ">=50K"})
+    df_split_row = data.drop('education', axis=1).join(
+        data['education'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('education'))\
+        .reset_index(level=0)
     probability = df_split_row['probability']
     data = df_split_row.drop('probability', axis=1)
     for key in probability.keys():
         if key % 2 == 1:
             probability.iloc[key] = 1 - probability.iloc[key]
-    xp = data[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age", "p"]]
+    xp = data[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age",
+               "education", ">=50K"]]
+    print(xp)
     return xp, probability
 
 def get_zxpy():
