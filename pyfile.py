@@ -5,14 +5,19 @@ import torch
 from torch import nn
 import torch.utils.data as data
 import torch.nn.functional as F
-
+from torch.nn import Module
 import torch.optim as optim
 import time
 
 from torch.utils.data import Dataset
-from data_processor import solve_sample
 
 from sklearn.metrics import classification_report, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
+
+from model import *
+from data_processor import solve_sample
+from dataset import *
+from utlits import *
+
 
 # def sample(num):
 #     u = np.random.rand()
@@ -46,42 +51,7 @@ from sklearn.metrics import classification_report, roc_auc_score, f1_score, reca
 #
 #     return new
 
-class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-        
-        self.input_fc = nn.Linear(input_dim, 10)
-        self.hidden_fc = nn.Linear(10, 10)
-        self.output_fc = nn.Linear(10, output_dim)
 
-    def forward(self, x):
-
-        # x = [batch size, height, width]
-
-        batch_size = x.shape[0]
-
-        x = x.view(batch_size, -1)
-
-        # x = [batch size, height * width]
-
-        h_1 = F.relu(self.input_fc(x))
-        # h_1 = [batch size, 250]
-
-        h_2 = F.relu(self.hidden_fc(h_1))
-        # h_2 = [batch size, 100]
-
-        h3 = self.output_fc(h_2)
-        # y_pred = [batch size, output dim]
-
-
-        y_pred = F.sigmoid(h3)
-        #y_pred = F.softmax(h3, dim=1)
-        return y_pred, h3
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-from torch.nn import Module
 class CustomLoss(Module):
     def __init__(self):
         super().__init__()
@@ -92,83 +62,45 @@ class CustomLoss(Module):
         return torch.mean(torch.square(temp))
 
 
-class imcomedataset(Dataset):
- 
-  def __init__(self,train_data,train_outcome):
-
-    self.x_train = torch.tensor(train_data, dtype=torch.float32)
-    self.y_train = torch.tensor(train_outcome, dtype=torch.float32)
-    self.prob = torch.from_numpy(prob.to_numpy())
- 
-  def __len__(self):
-    return len(self.y_train)
-   
-  def __getitem__(self,idx):
-    return self.x_train[idx],self.y_train[idx],self.prob[idx]
-
 '''----------------------------------------------------------------------------------------------------------------------'''
 '''----------------------------------------------------------------------------------------------------------------------'''
 '''----------------------------------------------------------------------------------------------------------------------'''
 '''----------------------------------------------------------------------------------------------------------------------'''
 
-# df = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
-#
-#
-# y = df["education"]
-# #x = df[["race","workclass", "fnlwgt", "marital_status", "occupation", "relationship", "age"]]
-# x = df[["race","workclass",
-#         "marital_status", "occupation", "relationship", "age"]]
-#
-# model = LR().fit(x, y)
-#
-# probilities = model.predict_proba(x)[:,1]
-#
-# treatments = [repeat(10, i) for i in probilities]
-#
-# new_x = build(x, probilities, 20)
-
-
-# VALID_RATIO = 0.9
-#
-#
-# n_train_examples = int(len(x) * VALID_RATIO)
-# n_valid_examples = len(x) - n_train_examples
-
+# Stage 1 to Stage 2
 sampleData, prob = solve_sample()
 stage2_data = sampleData[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age",
                   "education"]]
 
-#train_data = new_x.to_numpy()
+# Hyperparameter 
+batch_size = 64
+learning_rate = 0.005
+
+
+#Prepare dataloader
 train_data = stage2_data.to_numpy()
 train_outcome = sampleData[">=50K"].to_numpy()
 
-
 print(f'Number of training examples: {len(train_data)}')
 
-
-train_dataset = imcomedataset(train_data, train_outcome)
-
-batch_size = 64
+train_dataset = imcomedataset(train_data, train_outcome,prob)
 
 train_iterator = data.DataLoader(train_dataset,
                                  shuffle=True,
                                  batch_size=batch_size)
 
+# Model
 input_dim = stage2_data.shape[1]
-#input_dim = x.shape[1] + 1
 output_dim = 1
-
-
 model = MLP(input_dim, output_dim)
 
 print(f'The model has {count_parameters(model):,} trainable parameters')
 
-optimizer = optim.Adam(model.parameters(), lr=0.005)
 
-
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = CustomLoss()
-#criterion = nn.BCELoss()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 model = model.to(device)
 criterion = criterion.to(device)
 
@@ -178,11 +110,7 @@ criterion = criterion.to(device)
 '''----------------------------------------------------------------------------------------------------------------------'''
 
 
-def calculate_accuracy(y_pred, y):
-    top_pred = (y_pred>0.5).float()
-    correct = top_pred.eq(y.view_as(top_pred)).sum()
-    acc = correct.float() / y.shape[0]
-    return acc
+
 
 def train(model, iterator, optimizer, criterion, device):
 
