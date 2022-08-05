@@ -7,7 +7,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
+from sklearn.metrics import classification_report
 
 
 # this function will sample based on the probility and times give. 
