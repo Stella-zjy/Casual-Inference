@@ -131,7 +131,8 @@ def solve_sample():
             probability.iloc[key] = 1 - probability.iloc[key]
     xp = data[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age",
                "education", ">=50K"]]
-    print(xp)
+    xp["education"] = pd.to_numeric(xp["education"])
+    print(type(xp.iloc[0]["education"]))
     return xp, probability
 
 

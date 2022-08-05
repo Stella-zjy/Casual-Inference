@@ -10,40 +10,41 @@ import torch.optim as optim
 import time
 
 from torch.utils.data import Dataset
+from data_processor import solve_sample
 
 from sklearn.metrics import classification_report, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
 
-def sample(num):
-    u = np.random.rand()
-    
-    return 1 if u < num else 0
-
-def repeat(times = 1, possiblity=0.5):
-    
-    temp = []
-    
-    def sample(num):
-        u = np.random.rand()
-
-        return 1 if u < num else 0
-
-    for i in range(times):
-        a = sample(possiblity)
-        temp.append(a)
-    
-    return temp
-
-def build(orginal_x, probilities, times=1, save=False):
-    treatments = [repeat(times, i) for i in probilities]
-    data = np.hstack((x.to_numpy(),treatments))
-    new = pd.DataFrame(data, columns=list(x.columns)
-                         + ["p"+str(i) for i in range(0,times)])
-    
-    if save:
-        new.to_csv("new X.csv")
-        print("Successful saved!")
-    
-    return new
+# def sample(num):
+#     u = np.random.rand()
+#
+#     return 1 if u < num else 0
+#
+# def repeat(times = 1, possiblity=0.5):
+#
+#     temp = []
+#
+#     def sample(num):
+#         u = np.random.rand()
+#
+#         return 1 if u < num else 0
+#
+#     for i in range(times):
+#         a = sample(possiblity)
+#         temp.append(a)
+#
+#     return temp
+#
+# def build(orginal_x, probilities, times=1, save=False):
+#     treatments = [repeat(times, i) for i in probilities]
+#     data = np.hstack((x.to_numpy(),treatments))
+#     new = pd.DataFrame(data, columns=list(x.columns)
+#                          + ["p"+str(i) for i in range(0,times)])
+#
+#     if save:
+#         new.to_csv("new X.csv")
+#         print("Successful saved!")
+#
+#     return new
 
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -86,7 +87,7 @@ class CustomLoss(Module):
         super().__init__()
     def forward(self, predict_y, y,p):
 
-        temp =  y - torch.mul(predict_y, p)
+        temp = y - torch.mul(predict_y, p)
 
         return torch.mean(torch.square(temp))
 
@@ -95,9 +96,9 @@ class imcomedataset(Dataset):
  
   def __init__(self,train_data,train_outcome):
 
-    self.x_train=torch.tensor(train_data,dtype=torch.float32)
-    self.y_train=torch.tensor(train_outcome,dtype=torch.float32)
-    self.prob = torch.from_numpy(probilities)
+    self.x_train = torch.tensor(train_data, dtype=torch.float32)
+    self.y_train = torch.tensor(train_outcome, dtype=torch.float32)
+    self.prob = torch.from_numpy(prob.to_numpy())
  
   def __len__(self):
     return len(self.y_train)
@@ -110,40 +111,42 @@ class imcomedataset(Dataset):
 '''----------------------------------------------------------------------------------------------------------------------'''
 '''----------------------------------------------------------------------------------------------------------------------'''
 
-df = pd.read_csv("D:\Workspace\Casual-Inference\data\income_data\modified_train.csv")
+# df = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
+#
+#
+# y = df["education"]
+# #x = df[["race","workclass", "fnlwgt", "marital_status", "occupation", "relationship", "age"]]
+# x = df[["race","workclass",
+#         "marital_status", "occupation", "relationship", "age"]]
+#
+# model = LR().fit(x, y)
+#
+# probilities = model.predict_proba(x)[:,1]
+#
+# treatments = [repeat(10, i) for i in probilities]
+#
+# new_x = build(x, probilities, 20)
 
 
-y = df["education"]
-#x = df[["race","workclass", "fnlwgt", "marital_status", "occupation", "relationship", "age"]]
-x = df[["race","workclass", 
-        "marital_status", "occupation", "relationship", "age"]]
+# VALID_RATIO = 0.9
+#
+#
+# n_train_examples = int(len(x) * VALID_RATIO)
+# n_valid_examples = len(x) - n_train_examples
 
-model = LR().fit(x, y)
-
-probilities = model.predict_proba(x)[:,1]
-
-treatments = [repeat(10, i) for i in probilities]
-
-new_x = build(x, probilities, 20)
-
-
-VALID_RATIO = 0.9
-
-
-n_train_examples = int(len(x) * VALID_RATIO)
-n_valid_examples = len(x) - n_train_examples
-
-stage2_data = df[["workclass", "marital_status", "occupation", "relationship"]]
+sampleData, prob = solve_sample()
+stage2_data = sampleData[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age",
+                  "education"]]
 
 #train_data = new_x.to_numpy()
 train_data = stage2_data.to_numpy()
-train_outcome = df["income_bigger_than_50K"].to_numpy()
+train_outcome = sampleData[">=50K"].to_numpy()
 
 
 print(f'Number of training examples: {len(train_data)}')
 
 
-train_dataset = imcomedataset(train_data,train_outcome)
+train_dataset = imcomedataset(train_data, train_outcome)
 
 batch_size = 64
 
@@ -163,8 +166,8 @@ print(f'The model has {count_parameters(model):,} trainable parameters')
 optimizer = optim.Adam(model.parameters(), lr=0.005)
 
 
-#criterion = CustomLoss()
-criterion = nn.BCELoss()
+criterion = CustomLoss()
+#criterion = nn.BCELoss()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 criterion = criterion.to(device)
@@ -202,8 +205,8 @@ def train(model, iterator, optimizer, criterion, device):
 
         y_pred, _ = model(x)
 
-        #loss = criterion(y_pred, y,p)
-        loss = criterion(y_pred, y)
+        loss = criterion(y_pred, y, p)
+        #loss = criterion(y_pred, y)
 
         acc = calculate_accuracy(y_pred, y)
 
