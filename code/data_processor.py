@@ -119,7 +119,7 @@ def get_dataset():
     return data
 
 def solve_sample():
-    data = pd.read_csv(relative_path + "/Casual-Inference/new X.csv")
+    data = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/new X.csv")
     p = data.iloc[:, 8:].apply(lambda x:x.mean(), axis=1)
     data.insert(loc=len(data.columns), column='education', value="1,0")
     data = pd.concat([data, p], axis=1).rename(columns={0:'probability'})
