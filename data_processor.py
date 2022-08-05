@@ -134,6 +134,7 @@ def solve_sample():
     print(xp)
     return xp, probability
 
+
 def get_zxpy():
     data = pd.read_csv("../Casual-Inference/data/income_data/modified_train.csv")
     p = data["education"]
