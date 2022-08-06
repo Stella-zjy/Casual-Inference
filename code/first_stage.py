@@ -1,7 +1,6 @@
 import pandas as pd
-from pip import main
 import numpy as np
-from sklearn.linear_model import LogisticRegression 
+from sklearn.linear_model import LogisticRegression
 from data_processor import get_xp
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -12,10 +11,9 @@ from sklearn.metrics import classification_report
 
 # this function will sample based on the probility and times give. 
 # the return is a list of samples
-def repeat_sample(times = 1, possiblity=0.5):
-        
+def repeat_sample(times=1, possiblity=0.5):
     temp = []
-        
+
     def sample(num):
         u = np.random.rand()
 
@@ -24,47 +22,47 @@ def repeat_sample(times = 1, possiblity=0.5):
     for i in range(times):
         a = sample(possiblity)
         temp.append(a)
-        
+
     return temp
 
-    
+
 # this function will build the new treatments
 def build(x, probilities, times=1, save=False):
     treatments = [repeat_sample(times, i) for i in probilities]
-    data = np.hstack((x.to_numpy(),treatments))
+    data = np.hstack((x.to_numpy(), treatments))
     new = pd.DataFrame(data, columns=list(x.columns)
-                            + ["p"+str(i) for i in range(0,times)])
-        
+                                     + ["p" + str(i) for i in range(0, times)])
+
     if save:
-        new.to_csv("new X.csv")
+        new.to_csv("../data/income_data/new X.csv")
         print("Successful saved!")
-        
+
     return new
+
 
 # this function will do the first stage and return a new x.
 # ml method will have 4 opinions 
 # save will auto save the new x with sample result to a csv file.
 def solve_stage_one(ml_method="LR", save=False):
-    
     x, y = get_xp()
-
 
     d = {
         "LR": LogisticRegression(),
-        "ADA" : AdaBoostClassifier(),
-        "FOREST" : RandomForestClassifier(), 
-        "MLP" : MLPClassifier(),
+        "ADA": AdaBoostClassifier(),
+        "FOREST": RandomForestClassifier(),
+        "MLP": MLPClassifier(),
     }
 
     model = d[ml_method.upper()]
     clf = model.fit(x, y)
     pred = clf.predict(x)
-    probilities = clf.predict_proba(x)[:,1]
+    probilities = clf.predict_proba(x)[:, 1]
     print(classification_report(y, pred))
 
-    new_x = build(x, probilities, 20, save)
+    new_x = build(x, probilities, 1000, save)
 
     return new_x
 
+
 if __name__ == '__main__':
-    print(solve_stage_one("MLP"))
+    print(solve_stage_one("FOREST", save=False))

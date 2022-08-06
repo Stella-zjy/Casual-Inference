@@ -5,6 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 import torch.optim as optim
 import time
+from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 
 from data_processor import solve_sample
 
@@ -46,8 +47,18 @@ class MLP(nn.Module):
         acc = correct.float() / y.shape[0]
         return acc
 
+    def evaluate_prediction(self, y_pred, y):
+        y_pred = y_pred.detach().numpy().flatten()
+        y = y.detach().numpy().flatten()
+        for i in range(len(y_pred)):
+            if y_pred[i] >= 0.5:
+                y_pred[i] = 1.0
+            else:
+                y_pred[i] = 0.0
+        return classification_report(y, y_pred), roc_auc_score(y, y_pred), accuracy_score(y, y_pred)
+
   
-    def fit(self, x, y, prob, EPOCHS=50, lr=0.005, batch_size = 64):
+    def fit(self, x, y, prob, EPOCHS=100, lr=0.001, batch_size = 256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
@@ -88,13 +99,17 @@ class MLP(nn.Module):
 
             train_loss = epoch_loss.item() / num_sample
             train_acc = self.calculate_accuracy(pred_y_eval, y)
-
+            train_report, train_roc_auc_score, train_accuracy_score = self.evaluate_prediction(pred_y_eval, y)
             end_time = time.monotonic()
 
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
             print(f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
             print(f'Train Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
+            print(train_report)
+            print("roc_auc_score:" + str(train_roc_auc_score))
+            print("train_accuracy_score:" + str(train_accuracy_score))
+            print("---------------------------------------------------------------------------------------------------")
 
 
     def predict(self, x):

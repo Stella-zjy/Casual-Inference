@@ -15,12 +15,12 @@ from linearmodels.iv import IV2SLS
 pd.set_option("display.max_columns", 5)
 style.use("fivethirtyeight")
 
-relative_path = "D:/Workspace"
-#relative_path = ".."
+#relative_path = "D:/Workspace/Casual-Inference"
+relative_path = ".."
 
 
 def get_dataset():
-    data = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/test.csv")
+    data = pd.read_csv(relative_path + "/data/income_data/test.csv")
     data = data.dropna(axis=0)
     data.rename(columns={'educational-num': 'educational_num', "income_>50K": "income_bigger_than_50K",
                          'marital-status': 'marital_status', 'native-country': 'native_country'}, inplace=True)
@@ -119,11 +119,11 @@ def get_dataset():
     return data
 
 def solve_sample():
-    data = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/new X.csv")
+    data = pd.read_csv(relative_path + "/data/income_data/new X.csv")
     p = data.iloc[:, 8:].apply(lambda x:x.mean(), axis=1)
     data.insert(loc=len(data.columns), column='education', value="1,0")
     data = pd.concat([data, p], axis=1).rename(columns={0:'probability'})
-    y = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/modified_train.csv")["income_bigger_than_50K"]
+    y = pd.read_csv(relative_path + "/data/income_data/modified_train.csv")["income_bigger_than_50K"]
     data = pd.concat([data, y], axis=1).rename(columns={"income_bigger_than_50K": ">=50K"})
     df_split_row = data.drop('education', axis=1).join(
         data['education'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('education'))\
@@ -134,14 +134,13 @@ def solve_sample():
         if key % 2 == 1:
             probability.iloc[key] = 1 - probability.iloc[key]
     xp = data[["workclass", "marital_status", "occupation", "relationship", "gender", "native_country", "age",
-               "education", ">=50K"]]
+               "hours-per-week", "education", ">=50K"]]
     xp["education"] = pd.to_numeric(xp["education"])
-    print(type(xp.iloc[0]["education"]))
     return xp, probability
 
 
 def get_zxpy():
-    data = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/modified_train.csv")
+    data = pd.read_csv(relative_path + "/data/income_data/modified_train.csv")
     p = data["education"]
     x = data[[
         "workclass",  "marital_status", "occupation", "relationship", "gender", "hours-per-week", "native_country"]]
@@ -152,11 +151,11 @@ def get_zxpy():
 
 # get dataset ready for first stage ML, here we will use age as IV
 def get_xp():
-    data = pd.read_csv(relative_path + "/Casual-Inference/data/income_data/modified_train.csv")
+    data = pd.read_csv(relative_path + "/data/income_data/modified_train.csv")
     p = data["education"]
     x = data[[
         "workclass", "age", "marital_status", "occupation", "relationship", 
-        "gender", "native_country"]]
+        "gender", "native_country", "race", "hours-per-week"]]
     return x,p
 
 if __name__ == '__main__':
