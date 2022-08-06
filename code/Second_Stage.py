@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
+import matplotlib.pyplot as plt
 
 from data_processor import solve_sample
 
@@ -14,7 +15,6 @@ from data_processor import solve_sample
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
-        # self.criterion = criterion
         self.input_fc = nn.Linear(input_dim, 10)
         self.hidden_fc = nn.Linear(10, 10)
         self.output_fc = nn.Linear(10, output_dim)
@@ -57,8 +57,18 @@ class MLP(nn.Module):
                 y_pred[i] = 0.0
         return classification_report(y, y_pred), roc_auc_score(y, y_pred), accuracy_score(y, y_pred)
 
+
+    def plot_train_loss(self, EPOCHS, history_train_loss, lr):
+        plt.figure()
+        plt.plot([i+1 for i in range(EPOCHS)], history_train_loss)
+        plt.xlabel('epochs')
+        plt.ylabel('train loss')
+        plt.title('training loss with learning rate '+str(lr))
+        # plt.legend()
+        plt.show()
+
   
-    def fit(self, x, y, prob, EPOCHS=100, lr=0.001, batch_size = 256):
+    def fit(self, x, y, prob, EPOCHS=50, lr=0.001, batch_size = 256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
@@ -67,7 +77,7 @@ class MLP(nn.Module):
         y = torch.tensor(y, dtype=torch.float32)
         prob = torch.tensor(prob, dtype=torch.float32)
 
-
+        history = []
         for epoch in range(EPOCHS):
             start_time = time.monotonic()
 
@@ -98,18 +108,24 @@ class MLP(nn.Module):
             pred_y_eval = model.forward(x)
 
             train_loss = epoch_loss.item() / num_sample
+            history.append(train_loss)
             train_acc = self.calculate_accuracy(pred_y_eval, y)
-            train_report, train_roc_auc_score, train_accuracy_score = self.evaluate_prediction(pred_y_eval, y)
             end_time = time.monotonic()
-
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
             print(f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
             print(f'Train Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
-            print(train_report)
-            print("roc_auc_score:" + str(train_roc_auc_score))
-            print("train_accuracy_score:" + str(train_accuracy_score))
-            print("---------------------------------------------------------------------------------------------------")
+
+            # Plot train loss & Print report after the last epoch
+            if epoch == EPOCHS-1:
+                self.plot_train_loss(EPOCHS, history, lr)
+                train_report, train_roc_auc_score, train_accuracy_score = self.evaluate_prediction(pred_y_eval, y)
+                print(train_report)
+                print("roc_auc_score:" + str(train_roc_auc_score))
+                print("train_accuracy_score:" + str(train_accuracy_score))
+                print("---------------------------------------------------------------------------------------------------")
+
+
 
 
     def predict(self, x):
@@ -141,4 +157,24 @@ output_dim = 1
 ###
 model = MLP(input_dim, output_dim)
 model.fit(x, y, probability)
-# print(model.predict(x))
+
+
+
+# Counterfactual Prediction & Calculate ATE
+
+def calculate_ate(y_pred, y_fact):
+    ate = 0
+    size = len(y_fact)
+    for i in range(size):
+        if y_fact['education'][i] == 1:
+            ite = y_fact['income_bigger_than_50K'][i] - y_pred[2*i]
+        else:
+            ite = y_pred[2*i-1] - y_fact['income_bigger_than_50K'][i]
+        ate += ite
+    ate = ate / size
+    return ate
+
+y_pred = model.predict(x)
+y_fact = pd.read_csv('data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
+
+print('ATE = '+ str(calculate_ate(y_pred, y_fact)))
