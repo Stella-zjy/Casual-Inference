@@ -42,6 +42,20 @@ class MLP(nn.Module):
         return elapsed_mins, elapsed_secs
 
     def calculate_accuracy(self, y_pred, y):
+        # y_pred = y_pred.detach().numpy().flatten()
+        # y_fact = pd.read_csv('../data/income_data/modified_train.csv')[['education', 'income_bigger_than_50K']]
+        # correct = 0
+        # for i in range(len(y_pred)):
+        #     if y_pred[i] >= 0.5:
+        #         y_pred[i] = 1.0
+        #     else:
+        #         y_pred[i] = 0.0
+        # for i in range(len(y_fact)):
+        #     if y_fact["education"][i] == 1:
+        #         correct += (float(y_fact["income_bigger_than_50K"][i]) == y_pred[2 * i])
+        #     else:
+        #         correct += (float(y_fact["income_bigger_than_50K"][i]) == y_pred[2 * i + 1])
+        # acc = float(correct) / float(len(y_fact))
         top_pred = (y_pred>0.5).float()
         correct = top_pred.eq(y.view_as(top_pred)).sum()
         acc = correct.float() / y.shape[0]
