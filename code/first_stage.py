@@ -65,4 +65,4 @@ def solve_stage_one(ml_method="LR", save=False):
 
 
 if __name__ == '__main__':
-    print(solve_stage_one("FOREST", save=False))
+    print(solve_stage_one("FOREST", save=True))

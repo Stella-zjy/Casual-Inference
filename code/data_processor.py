@@ -20,7 +20,7 @@ relative_path = ".."
 
 
 def get_dataset():
-    data = pd.read_csv(relative_path + "/data/income_data/test.csv")
+    data = pd.read_csv(relative_path + "/data/income_data/train.csv")
     data = data.dropna(axis=0)
     data.rename(columns={'educational-num': 'educational_num', "income_>50K": "income_bigger_than_50K",
                          'marital-status': 'marital_status', 'native-country': 'native_country'}, inplace=True)
@@ -28,7 +28,6 @@ def get_dataset():
                                         value="Indian")
     data["race"] = data["race"].replace(to_replace="Asian-Pac-Islander",
                                         value="Asian")
-    print(data.groupby('occupation').count())
     occupationDict = {
         "Exec-managerial": 0,
         "Other-service": 4,
@@ -115,7 +114,11 @@ def get_dataset():
     data["workclass"] = data["workclass"].map(workclassDict)
     data["education"] = data["education"].map(educationDict)
     data["relationship"] = data["relationship"].map(map_relationship)
-    data.to_csv("modified_test.csv")
+    # for idx, row in data.iterrows():
+    #     if row["income_bigger_than_50K"] == 1:
+    #         data = data.append(row, ignore_index=True)
+    #         data = data.append(row, ignore_index=True)
+    data.to_csv(relative_path + "/data/income_data/modified_train.csv")
     return data
 
 def solve_sample():
@@ -159,5 +162,5 @@ def get_xp():
     return x,p
 
 if __name__ == '__main__':
-    solve_sample()
+    print(get_dataset())
 

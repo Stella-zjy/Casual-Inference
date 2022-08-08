@@ -68,7 +68,7 @@ class MLP(nn.Module):
         plt.show()
 
   
-    def fit(self, x, y, prob, EPOCHS=50, lr=0.001, batch_size = 256):
+    def fit(self, x, y, prob, EPOCHS=50, lr=0.01, batch_size = 256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
@@ -167,14 +167,14 @@ def calculate_ate(y_pred, y_fact):
     size = len(y_fact)
     for i in range(size):
         if y_fact['education'][i] == 1:
-            ite = y_fact['income_bigger_than_50K'][i] - y_pred[2*i]
+            ite = y_fact['income_bigger_than_50K'][i] - y_pred[2*i+1]
         else:
-            ite = y_pred[2*i-1] - y_fact['income_bigger_than_50K'][i]
+            ite = y_pred[2*i] - y_fact['income_bigger_than_50K'][i]
         ate += ite
     ate = ate / size
     return ate
 
 y_pred = model.predict(x)
-y_fact = pd.read_csv('data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
+y_fact = pd.read_csv('../data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
 
 print('ATE = '+ str(calculate_ate(y_pred, y_fact)))
