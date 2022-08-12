@@ -8,7 +8,7 @@ import time
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 
-from income2_data_processor import get_stage2_input
+from income2_data_processor import ak91Data, caEducationalData, IPUMSData
 
 
 class MLP(nn.Module):
@@ -78,7 +78,7 @@ class MLP(nn.Module):
         # plt.legend()
         plt.show()
 
-    def fit(self, x, y, prob, EPOCHS=10, lr=0.005, batch_size=256):
+    def fit(self, x, y, prob, EPOCHS=20, lr=0.005, batch_size=256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
@@ -134,7 +134,7 @@ class MLP(nn.Module):
                 print("roc_auc_score:" + str(train_roc_auc_score))
                 print("train_accuracy_score:" + str(train_accuracy_score))
                 print(
-                    "---------------------------------------------------------------------------------------------------")
+                    "-------------------------------------------------------------------------------------------------")
 
     def predict(self, x):
         x = torch.tensor(x, dtype=torch.float32)
@@ -145,11 +145,11 @@ class MLP(nn.Module):
 
 
 # Stage 1 to Stage 2
-xp, probability = get_stage2_input()
+xp, probability = IPUMSData.get_stage2_input()
 # Input value of the outcome network
-x = xp[["yob", "sob", "education"]].to_numpy()
+x = xp[["age", "gender", "marital_status", "birth_place", "industry", "hours_per_week", "education"]].to_numpy()
 # Groudtruth value of the outcome network
-y = xp[["wage"]].to_numpy()
+y = xp[["income"]].to_numpy()
 # Probability
 probability = probability.to_numpy()
 
@@ -172,15 +172,15 @@ def calculate_ate(y_pred, y_fact):
     size = len(y_fact)
     for i in range(size):
         if y_fact['education'][i] == 1:
-            ite = y_fact['wage'][i] - y_pred[2 * i + 1]
+            ite = y_fact['income'][i] - y_pred[2 * i + 1]
         else:
-            ite = y_pred[2 * i] - y_fact['wage'][i]
+            ite = y_pred[2 * i] - y_fact['income'][i]
         ate += ite
     ate = ate / size
     return ate
 
 
 y_pred = model.predict(x)
-y_fact = pd.read_csv('../data/income_data2/modified_ak91.csv')[['education', 'wage']]
+y_fact = pd.read_csv('../data/IPUMS_IncomeData/modified_IPUMS_IncomeData.csv')[['education', 'income']]
 
 print('ATE = ' + str(calculate_ate(y_pred, y_fact)))
