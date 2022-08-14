@@ -8,10 +8,10 @@ import time
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 import matplotlib.pyplot as plt
 
-from data_processor import solve_sample
+from income2_data_processor import IPUMSData
 
-
-
+#relative_path = "D:/Workspace/Casual-Inference"
+relative_path = ".."
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
@@ -20,20 +20,19 @@ class MLP(nn.Module):
         self.output_fc = nn.Linear(10, output_dim)
 
     def forward(self, x):
- 
+        # x = [batch size, height, width]
         batch_size = x.shape[0]
         x = x.view(batch_size, -1)
- 
+        # x = [batch size, height * width]
         h_1 = F.relu(self.input_fc(x))
-
+        # h_1 = [batch size, 250]
         h_2 = F.relu(self.hidden_fc(h_1))
-  
+        # h_2 = [batch size, 100]
         h3 = self.output_fc(h_2)
-
+        # y_pred = [batch size, output dim]
         y_pred = F.sigmoid(h3)
-        #y_pred = F.softmax(h3, dim=1)
+        # y_pred = F.softmax(h3, dim=1)
         return y_pred
-
 
     def epoch_time(self, start_time, end_time):
         elapsed_time = end_time - start_time
@@ -56,7 +55,7 @@ class MLP(nn.Module):
         #     else:
         #         correct += (float(y_fact["income_bigger_than_50K"][i]) == y_pred[2 * i + 1])
         # acc = float(correct) / float(len(y_fact))
-        top_pred = (y_pred>0.5).float()
+        top_pred = (y_pred > 0.5).float()
         correct = top_pred.eq(y.view_as(top_pred)).sum()
         acc = correct.float() / y.shape[0]
         return acc
@@ -71,25 +70,22 @@ class MLP(nn.Module):
                 y_pred[i] = 0.0
         return classification_report(y, y_pred), roc_auc_score(y, y_pred), accuracy_score(y, y_pred)
 
-
     def plot_train_loss(self, EPOCHS, history_train_loss, lr):
         plt.figure()
-        plt.plot([i+1 for i in range(EPOCHS)], history_train_loss)
+        plt.plot([i + 1 for i in range(EPOCHS)], history_train_loss)
         plt.xlabel('epochs')
         plt.ylabel('train loss')
-        plt.title('training loss with learning rate '+str(lr))
+        plt.title('training loss with learning rate ' + str(lr))
         # plt.legend()
         plt.show()
 
-  
-    def fit(self, x, y, prob, EPOCHS=50, lr=0.01, batch_size = 256):
+    def fit(self, x, y, EPOCHS=30, lr=0.001, batch_size=256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
-        
+
         x = torch.tensor(x, dtype=torch.float32)
         y = torch.tensor(y, dtype=torch.float32)
-        prob = torch.tensor(prob, dtype=torch.float32)
 
         history = []
         for epoch in range(EPOCHS):
@@ -97,27 +93,22 @@ class MLP(nn.Module):
 
             all_idx = np.arange(num_sample)
             np.random.shuffle(all_idx)
-            
+
             epoch_loss = 0
 
             # Mini-batch Training
             for batch_num in range(total_batch):
-                selected_idx = all_idx[batch_size*batch_num:(batch_num+1)*batch_size]
+                selected_idx = all_idx[batch_size * batch_num:(batch_num + 1) * batch_size]
                 sub_x = x[selected_idx]
                 sub_y = y[selected_idx]
-                sub_prob = prob[selected_idx]
 
                 optimizer.zero_grad()
                 pred_y = self.forward(sub_x)
-                
+
                 xent_loss = 0
-                # i = 0
-                # while i < len((selected_idx))-1:
-                #     xent_loss += (sub_y[i]-sub_prob[i]*pred_y[i]-sub_prob[i+1]*pred_y[i+1]) ** 2
-                #     i += 2
                 for i in range(len(selected_idx)):
-                    xent_loss += (sub_y[i] - sub_prob[i] * pred_y[i]) ** 2
-                          
+                    xent_loss += (sub_y[i] - pred_y[i]) ** 2
+
                 loss = xent_loss
                 loss.backward()
                 optimizer.step()
@@ -131,51 +122,45 @@ class MLP(nn.Module):
             end_time = time.monotonic()
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
-            print(f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
-            print(f'Train Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
+            print(f'Epoch: {epoch + 1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
+            print(f'Train Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
 
             # Plot train loss & Print report after the last epoch
-            if epoch == EPOCHS-1:
+            if epoch == EPOCHS - 1:
                 self.plot_train_loss(EPOCHS, history, lr)
                 train_report, train_roc_auc_score, train_accuracy_score = self.evaluate_prediction(pred_y_eval, y)
                 print(train_report)
                 print("roc_auc_score:" + str(train_roc_auc_score))
                 print("train_accuracy_score:" + str(train_accuracy_score))
-                print("---------------------------------------------------------------------------------------------------")
-
-
-
+                print(
+                    "---------------------------------------------------------------------------------------------------")
 
     def predict(self, x):
         x = torch.tensor(x, dtype=torch.float32)
         pred_y = self.forward(x)
-        pred_y = (pred_y>0.5).float().detach()
+        pred_y = (pred_y > 0.5).float().detach()
         pred_y = torch.flatten(pred_y).numpy()
         return pred_y
-        
-
 
 
 # Stage 1 to Stage 2
-xp, probability = solve_sample()
+zx, p= IPUMSData.get_stage1_input()
+del zx['race']
+xp = pd.concat([zx, p], axis=1)
 # Input value of the outcome network
-x = xp[["workclass", "marital_status", "occupation", "relationship", "gender", 
-        "native_country", "age", "education"]].to_numpy()
+x = xp.to_numpy()
 # Groudtruth value of the outcome network
-y = xp[[">=50K"]].to_numpy()
+y = pd.read_csv(relative_path + "/data/IPUMS_IncomeData/modified_IPUMS_IncomeData.csv")['income']
+y = y.to_numpy()
 # Probability
-probability = probability.to_numpy()
-
 
 # Initialize input & output dimensions
 input_dim = x.shape[1]
 output_dim = 1
 
-
 ###
 model = MLP(input_dim, output_dim)
-model.fit(x, y, probability)
-
+model.fit(x, y)
 
 
 # Counterfactual Prediction & Calculate ATE
@@ -185,14 +170,19 @@ def calculate_ate(y_pred, y_fact):
     size = len(y_fact)
     for i in range(size):
         if y_fact['education'][i] == 1:
-            ite = y_fact['income_bigger_than_50K'][i] - y_pred[2*i+1]
+            ite = y_fact['income_bigger_than_50K'][i] - y_pred[2 * i + 1]
         else:
-            ite = y_pred[2*i] - y_fact['income_bigger_than_50K'][i]
+            ite = y_pred[2 * i] - y_fact['income_bigger_than_50K'][i]
         ate += ite
     ate = ate / size
     return ate
 
-y_pred = model.predict(x)
-y_fact = pd.read_csv('../data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
-
-print('ATE = '+ str(calculate_ate(y_pred, y_fact)))
+# xp, _ = IPUMSData.get_stage2_input()
+# x = xp[["workclass", "marital_status", "occupation", "relationship", "gender",
+#         "native_country", "age", "education"]].to_numpy()
+# # Groudtruth value of the outcome network
+# y = xp[[">=50K"]].to_numpy()
+# y_pred = model.predict(x)
+# y_fact = pd.read_csv('../data/income_data/modified_train.csv')[['education', 'income_bigger_than_50K']]
+#
+# print('ATE = ' + str(calculate_ate(y_pred, y_fact)))

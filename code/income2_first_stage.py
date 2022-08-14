@@ -34,7 +34,7 @@ def build(x, probilities, times=1, save=False):
                                      + ["p" + str(i) for i in range(0, times)])
 
     if save:
-        new.to_csv("../data/income_data2/ca_sample_data.csv")
+        new.to_csv("../data/IPUMS_IncomeData/sample_data.csv")
         print("Successful saved!")
 
     return new
@@ -45,7 +45,7 @@ def build(x, probilities, times=1, save=False):
 # save will auto save the new x with sample result to a csv file.
 def solve_stage_one(ml_method="LR", save=False):
     #x, y = ak91Data().get_stage1_input()
-    x, y = caEducationalData().get_stage1_input()
+    x, y = IPUMSData().get_stage1_input()
     #x, y = IPUMSData().get_stage1_input()
     d = {
         "LR": LogisticRegression(),
@@ -65,4 +65,4 @@ def solve_stage_one(ml_method="LR", save=False):
 
 
 if __name__ == '__main__':
-    print(solve_stage_one("ADA", save=True))
+    print(solve_stage_one("FOREST", save=True))
