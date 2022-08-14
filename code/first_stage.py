@@ -59,10 +59,10 @@ def solve_stage_one(ml_method="LR", save=False):
     probilities = clf.predict_proba(x)[:, 1]
     print(classification_report(y, pred))
 
-    new_x = build(x, probilities, 1000, save)
+    new_x = build(x, probilities, 10, save)
 
     return new_x
 
 
 if __name__ == '__main__':
-    print(solve_stage_one("FOREST", save=True))
+    print(solve_stage_one("FOREST", save=False))

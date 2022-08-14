@@ -78,7 +78,7 @@ class MLP(nn.Module):
         # plt.legend()
         plt.show()
 
-    def fit(self, x, y, prob, EPOCHS=20, lr=0.005, batch_size=256):
+    def fit(self, x, y, prob, EPOCHS=30, lr=0.005, batch_size=256):
         optimizer = optim.Adam(self.parameters(), lr=lr)
         num_sample = len(x)
         total_batch = num_sample // batch_size
@@ -107,8 +107,12 @@ class MLP(nn.Module):
                 pred_y = self.forward(sub_x)
 
                 xent_loss = 0
-                for i in range(len(selected_idx)):
-                    xent_loss += (sub_y[i] - sub_prob[i] * pred_y[i]) ** 2
+                i = 0
+                while i < len((selected_idx))-1:
+                    xent_loss += (sub_y[i]-sub_prob[i]*pred_y[i]-sub_prob[i+1]*pred_y[i+1]) ** 2
+                    i += 2
+                # for i in range(len(selected_idx)):
+                #     xent_loss += (sub_y[i] - sub_prob[i] * pred_y[i]) ** 2
 
                 loss = xent_loss
                 loss.backward()
