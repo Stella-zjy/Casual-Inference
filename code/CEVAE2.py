@@ -7,27 +7,25 @@ from pyro.contrib.cevae import CEVAE
 import numpy as np
 import pandas as pd
 from data_processor import solve_sample, get_zxpy
+from income2_data_processor import ak91Data, caEducationalData, IPUMSData
 
 
 def main():
 
-    z1, z2, x, p, y = get_zxpy()
-    x["education"] = p
-    x["race"] = z2
-    x[">=50K"] = y
-    sampleData = x
-    print(sampleData)
+    sampleData = pd.read_csv("/Users/kunhanwu/Documents/GitHub/Casual-Inference/data/IPUMS_IncomeData/modified_IPUMS_IncomeData.csv")
+
+    print(sampleData.columns)
 
     sampleData_train = sampleData.iloc[:int(len(sampleData) * 0.7)]
     sampleData_test = sampleData.iloc[int(len(sampleData) * 0.7):]
 
-    x_train = torch.tensor(sampleData_train[["workclass", 
-    "marital_status", "occupation", "relationship", 
-    "gender", "native_country"]].to_numpy())
+    x_train = torch.tensor(sampleData_train[["hours_per_week", 
+    "marital_status", "occupation", "industry", 
+    "gender", "age"]].to_numpy())
     x_train = x_train.to(torch.float)
     t_train = torch.tensor(sampleData_train["education"].to_numpy())
     t_train = t_train.to(torch.float)
-    y_train = torch.tensor(sampleData_train[">=50K"].to_numpy())
+    y_train = torch.tensor(sampleData_train["income"].to_numpy())
     y_train = y_train.to(torch.float)
 
 
@@ -60,21 +58,19 @@ def main():
         weight_decay=weight_decay,
     )
 
-    x_test = torch.tensor(sampleData_test[["workclass", 
-    "marital_status", "occupation", "relationship", 
-    "gender", "native_country"]].to_numpy())
+    x_test = torch.tensor(sampleData_test[["hours_per_week", 
+    "marital_status", "occupation", "industry", 
+    "gender", "age"]].to_numpy())
     x_test = x_test.to(torch.float)
     t_test = torch.tensor(sampleData_test["education"].to_numpy())
     t_test = t_test.to(torch.float)
-    y_test = torch.tensor(sampleData_test[">=50K"].to_numpy())
+    y_test = torch.tensor(sampleData_test["income"].to_numpy())
     y_test = y_test.to(torch.float)
-
 
     est_ite = cevae.ite(x_test)
     est_ate = est_ite.mean()
     print("estimated ATE = {:0.3g}".format(est_ate.item()))
 
 if __name__ == "__main__":
+
     main()
-
-
