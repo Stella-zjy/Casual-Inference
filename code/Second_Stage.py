@@ -95,35 +95,48 @@ class MLP(nn.Module):
         for epoch in range(EPOCHS):
             start_time = time.monotonic()
 
-            all_idx = np.arange(num_sample)
-            np.random.shuffle(all_idx)
+            # all_idx = np.arange(num_sample)
+            # np.random.shuffle(all_idx)
             
             epoch_loss = 0
 
-            # Mini-batch Training
-            for batch_num in range(total_batch):
-                selected_idx = all_idx[batch_size*batch_num:(batch_num+1)*batch_size]
-                sub_x = x[selected_idx]
-                sub_y = y[selected_idx]
-                sub_prob = prob[selected_idx]
+            # # Mini-batch Training
+            # for batch_num in range(total_batch):
+            #     selected_idx = all_idx[batch_size*batch_num:(batch_num+1)*batch_size]
+            #     sub_x = x[selected_idx]
+            #     sub_y = y[selected_idx]
+            #     sub_prob = prob[selected_idx]
 
-                optimizer.zero_grad()
-                pred_y = self.forward(sub_x)
+            #     optimizer.zero_grad()
+            #     pred_y = self.forward(sub_x)
                 
-                xent_loss = 0
-                # i = 0
-                # while i < len((selected_idx))-1:
-                #     xent_loss += (sub_y[i]-sub_prob[i]*pred_y[i]-sub_prob[i+1]*pred_y[i+1]) ** 2
-                #     i += 2
-                for i in range(len(selected_idx)):
-                    xent_loss += (sub_y[i] - sub_prob[i] * pred_y[i]) ** 2
+            #     xent_loss = 0
+            #     # i = 0
+            #     # while i < len((selected_idx))-1:
+            #     #     xent_loss += (sub_y[i]-sub_prob[i]*pred_y[i]-sub_prob[i+1]*pred_y[i+1]) ** 2
+            #     #     i += 2
+            #     for i in range(len(selected_idx)):
+            #         xent_loss += (sub_y[i] - sub_prob[i] * pred_y[i]) ** 2
                           
-                loss = xent_loss
-                loss.backward()
-                optimizer.step()
-                epoch_loss += xent_loss
+            #     loss = xent_loss
+            #     loss.backward()
+            #     optimizer.step()
+            #     epoch_loss += xent_loss
 
-            pred_y_eval = model.forward(x)
+            optimizer.zero_grad()
+            pred_y = self.forward(x)
+
+            # Calculate loss
+            i = 0
+            while i < num_sample-2:
+                epoch_loss += (y[i] - pred_y[i]*prob[i] - pred_y[i+1]*prob[i+1]) ** 2
+                i += 2
+            
+            loss = epoch_loss
+            loss.backward()
+            optimizer.step()
+
+            pred_y_eval = self.forward(x)
 
             train_loss = epoch_loss.item() / num_sample
             history.append(train_loss)
@@ -136,7 +149,7 @@ class MLP(nn.Module):
 
             # Plot train loss & Print report after the last epoch
             if epoch == EPOCHS-1:
-                self.plot_train_loss(EPOCHS, history, lr)
+                # self.plot_train_loss(EPOCHS, history, lr)
                 train_report, train_roc_auc_score, train_accuracy_score = self.evaluate_prediction(pred_y_eval, y)
                 print(train_report)
                 print("roc_auc_score:" + str(train_roc_auc_score))
@@ -193,6 +206,6 @@ def calculate_ate(y_pred, y_fact):
     return ate
 
 y_pred = model.predict(x)
-y_fact = pd.read_csv('../data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
+y_fact = pd.read_csv('data/income_data/modified_train.csv')[['education','income_bigger_than_50K']]
 
 print('ATE = '+ str(calculate_ate(y_pred, y_fact)))
