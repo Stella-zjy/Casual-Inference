@@ -1,2 +1,2 @@
-# Casual-Inference
-Counterfactual prediction by using the instrument variables (IVs)
+# Causal-Inference
+Counterfactual prediction by using the instrument variables based on DeepIV framework.
